@@ -1,38 +1,44 @@
-# Create IAM policy document for destination bucket
+# Create IAM policy document for destination bucket allowed the requested account access to replicate
 data "aws_iam_policy_document" "destination" {
   version = "2012-10-17"
-  statement {
-    effect = "Allow"
-    principals {
-      identifiers = [
-        "arn:aws:iam::${var.source_aws_account_id}:root"
+  dynamic "statement" {
+    for_each = var.source_aws_account_ids
+    content {
+      effect = "Allow"
+      principals {
+        identifiers = [
+          "arn:aws:iam::${statement.value}:root"
+        ]
+        type = "AWS"
+      }
+      actions = [
+        "s3:ReplicateDelete",
+        "s3:ReplicateObject",
+        "s3:ObjectOwnerOverrideToBucketOwner"
       ]
-      type = "AWS"
+      resources = [
+        "arn:aws:s3:::${var.destination_bucket_name}/*"
+      ]
     }
-    actions = [
-      "s3:ReplicateDelete",
-      "s3:ReplicateObject",
-      "s3:ObjectOwnerOverrideToBucketOwner"
-    ]
-    resources = [
-      "arn:aws:s3:::${var.destination_bucket_name}/*"
-    ]
   }
-  statement {
-    effect = "Allow"
-    principals {
-      identifiers = [
-        "arn:aws:iam::${var.source_aws_account_id}:root"
+  dynamic "statement" {
+    for_each = var.source_aws_account_ids
+    content {
+      effect = "Allow"
+      principals {
+        identifiers = [
+          "arn:aws:iam::${statement.value}:root"
+        ]
+        type = "AWS"
+      }
+      actions = [
+        "s3:List*",
+        "s3:GetBucketVersioning",
+        "s3:PutBucketVersioning"
       ]
-      type = "AWS"
+      resources = [
+        "arn:aws:s3:::${var.destination_bucket_name}"
+      ]
     }
-    actions = [
-      "s3:List*",
-      "s3:GetBucketVersioning",
-      "s3:PutBucketVersioning"
-    ]
-    resources = [
-      "arn:aws:s3:::${var.destination_bucket_name}"
-    ]
   }
 }
